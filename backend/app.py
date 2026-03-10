@@ -5,7 +5,6 @@ from google.cloud.sql.connector import Connector
 import sqlalchemy
 import pandas as pd
 import uuid
-from ai_grader import run_ai_grading
 
 
 # React build 경로
