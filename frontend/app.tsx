@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
-import LoginScreen from "./components/LoginScreen.tsx";
-import GradingScreen from "./components/DataViewer.tsx";
+import DataViewer from "./components/DataViewer.tsx";
 import './components/Viewer.css'
 
 // Cloud Run API URL
 const API_BASE_URL =
-  "test";
+  "https://ai-assist-grading-1015930710584.us-central1.run.app";
 
 function App() {
   return (
-    <GradingScreen
+    <DataViewer
       apiUrl={API_BASE_URL}
     />
   );
