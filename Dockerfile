@@ -16,6 +16,8 @@ WORKDIR /app
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY backend ./backend
+
 # frontend 빌드 결과 복사
 COPY --from=frontend /app/dist ./dist
 
