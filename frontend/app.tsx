@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
 import DataViewer from "./components/DataViewer.tsx";
-import './components/Viewer.css'
+import './components/Viewer.css';
 
 // Cloud Run API URL
 const API_BASE_URL =
