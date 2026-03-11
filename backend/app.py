@@ -5,6 +5,8 @@ from google.cloud.sql.connector import Connector
 import sqlalchemy
 import pandas as pd
 import uuid
+from flask import send_file
+import io
 
 
 # React build 경로
@@ -46,100 +48,101 @@ def get_engine():
     )
 
 # API 영역
-    
-@app.get("/viewer/<rater_id>")
-def viewer(rater_id):
+SQL = """WITH latest_rater AS (
+    SELECT *
+    FROM rater_scoreDB r
+    WHERE created_at = (
+        SELECT MAX(created_at)
+        FROM rater_scoreDB
+        WHERE student_uid = r.student_uid
+        AND rater_uid = r.rater_uid
+    )
+),
+
+latest_ai AS (
+    SELECT *
+    FROM ai_scoreDB a
+    WHERE created_at = (
+        SELECT MAX(created_at)
+        FROM ai_scoreDB
+        WHERE student_uid = a.student_uid
+        AND rater_uid = a.rater_uid
+    )
+),
+
+latest_final AS (
+    SELECT *
+    FROM final_scoreDB f
+    WHERE created_at = (
+        SELECT MAX(created_at)
+        FROM final_scoreDB
+        WHERE student_uid = f.student_uid
+        AND rater_uid = f.rater_uid
+    )
+)
+
+SELECT
+    r.rater_id,
+    s.student_id,
+
+    r.knw_score AS rater_knw_score,
+    r.crt_score AS rater_crt_score,
+
+    a.knw_score AS ai_knw_score,
+    a.crt_score AS ai_crt_score,
+    a.knw_text,
+    a.crt_text,
+
+    f.knw_score AS final_knw_score,
+    f.crt_score AS final_crt_score
+
+FROM latest_rater r
+
+JOIN studentDB s
+    ON r.student_uid = s.student_uid
+
+LEFT JOIN latest_ai a
+    ON r.student_uid = a.student_uid
+    AND r.rater_uid = a.rater_uid
+
+LEFT JOIN latest_final f
+    ON r.student_uid = f.student_uid
+    AND r.rater_uid = f.rater_uid
+
+ORDER BY r.rater_uid, s.student_id """
+
+@app.get("/export_excel")
+def export_excel():
 
     engine = get_engine()
 
     with engine.connect() as conn:
+        rows = conn.execute(sqlalchemy.text(SQL)).mappings().fetchall()
 
-        # rater_uid 찾기
-        rater = conn.execute(
-            sqlalchemy.text("""
-                SELECT rater_uid
-                FROM raterDB
-                WHERE rater_name = :rid
-            """),
-            {"rid": rater_id}
-        ).mappings().fetchone()
+    df = pd.DataFrame(rows)
 
-        if not rater:
-            return {"error": "rater not found"}, 404
+    output = io.BytesIO()
 
-        rater_uid = rater["rater_uid"]
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="scores")
 
-        rows = conn.execute(
-            sqlalchemy.text("""
-                WITH latest_rater AS (
-                    SELECT *
-                    FROM rater_scoreDB r
-                    WHERE created_at = (
-                        SELECT MAX(created_at)
-                        FROM rater_scoreDB
-                        WHERE student_uid = r.student_uid
-                        AND rater_uid = r.rater_uid
-                    )
-                ),
+    output.seek(0)
 
-                latest_ai AS (
-                    SELECT *
-                    FROM ai_scoreDB a
-                    WHERE created_at = (
-                        SELECT MAX(created_at)
-                        FROM ai_scoreDB
-                        WHERE student_uid = a.student_uid
-                        AND rater_uid = a.rater_uid
-                    )
-                ),
+    return send_file(
+        output,
+        download_name="all_scores.xlsx",
+        as_attachment=True
+    )
 
-                latest_final AS (
-                    SELECT *
-                    FROM final_scoreDB f
-                    WHERE created_at = (
-                        SELECT MAX(created_at)
-                        FROM final_scoreDB
-                        WHERE student_uid = f.student_uid
-                        AND rater_uid = f.rater_uid
-                    )
-                )
+@app.get("/viewer")
+def viewer():
 
-                SELECT
-                    s.student_id,
+    engine = get_engine()
 
-                    r.knw_score AS rater_knw_score,
-                    r.crt_score AS rater_crt_score,
+    with engine.connect() as conn:
+        rows = conn.execute(sqlalchemy.text(SQL)).mappings().fetchall()
 
-                    a.knw_score AS ai_knw_score,
-                    a.crt_score AS ai_crt_score,
-                    a.knw_text,
-                    a.crt_text,
-
-                    f.knw_score AS final_knw_score,
-                    f.crt_score AS final_crt_score
-
-                FROM latest_rater r
-
-                JOIN studentDB s
-                    ON r.student_uid = s.student_uid
-
-                LEFT JOIN latest_ai a
-                    ON r.student_uid = a.student_uid
-                    AND r.rater_uid = a.rater_uid
-
-                LEFT JOIN latest_final f
-                    ON r.student_uid = f.student_uid
-                    AND r.rater_uid = f.rater_uid
-
-                WHERE r.rater_uid = :uid
-            """),
-            {"uid": rater_uid}
-        ).mappings().fetchall()
-
-        return {
-            "rater_uid": rater_uid,
-            "results": [dict(row) for row in rows]
-        }
+    return {"results": [dict(r) for r in rows]}
 
 # 프런트엔드 서빙
 @app.route("/", defaults={"path": ""})

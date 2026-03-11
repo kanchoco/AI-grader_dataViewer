@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Props {
   apiUrl: string;
@@ -14,19 +14,20 @@ interface Result {
   final_crt_score: number;
 }
 
+
 const DataViewer: React.FC<Props> = ({ apiUrl }) => {
 
   const [raterId, setRaterId] = useState("");
   const [results, setResults] = useState<Result[]>([]);
+  
+  const handleExpertExcel = () => {
+  window.open(`${apiUrl}/expert_excel`, "_blank");
+  };
 
-  const handleSearch = async () => {
-
-    if (!raterId) return;
-
+  const fetchData = async () => {
     try {
-      const res = await fetch(`${apiUrl}/viewer/${raterId}`);
+      const res = await fetch(`${apiUrl}/viewer`);
       const data = await res.json();
-
       setResults(data.results || []);
     } catch (err) {
       console.error(err);
@@ -34,26 +35,27 @@ const DataViewer: React.FC<Props> = ({ apiUrl }) => {
     }
   };
 
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+
   return (
-    <div className="viewer-container">
+    <div className="search-box">
 
-      <h2>Rater Result Viewer</h2>
+      <button onClick={handleSearch}>
+        Search
+      </button>
 
-      <div className="search-box">
-        <input
-          value={raterId}
-          onChange={(e) => setRaterId(e.target.value)}
-          placeholder="Enter rater ID"
-        />
-
-        <button onClick={handleSearch}>
-          Search
-        </button>
-      </div>
+      <button onClick={handleExpertExcel}>
+        Expert Excel
+      </button>
+    </div>
 
       <table className="viewer-table">
         <thead>
           <tr>
+            <th>Rater</th>
             <th>Student</th>
             <th>Rater KNW</th>
             <th>Rater CRT</th>
@@ -67,6 +69,7 @@ const DataViewer: React.FC<Props> = ({ apiUrl }) => {
         <tbody>
           {results.map((r, i) => (
             <tr key={i}>
+              <td>{r.rater_id}</td>
               <td>{r.student_id}</td>
               <td>{r.rater_knw_score}</td>
               <td>{r.rater_crt_score}</td>
