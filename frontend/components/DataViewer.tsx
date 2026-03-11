@@ -17,7 +17,6 @@ interface Result {
 
 const DataViewer: React.FC<Props> = ({ apiUrl }) => {
 
-  const [raterId, setRaterId] = useState("");
   const [results, setResults] = useState<Result[]>([]);
   
   const handleExpertExcel = () => {
