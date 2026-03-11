@@ -41,16 +41,17 @@ const DataViewer: React.FC<Props> = ({ apiUrl }) => {
 
 
   return (
-    <div className="search-box">
+    <div>
 
-      <button onClick={handleSearch}>
-        Search
-      </button>
+      <div className="search-box">
+        <button onClick={handleSearch}>
+          Search
+        </button>
 
-      <button onClick={handleExpertExcel}>
-        Expert Excel
-      </button>
-    </div>
+        <button onClick={handleExpertExcel}>
+          Expert Excel
+        </button>
+      </div>
 
       <table className="viewer-table">
         <thead>
