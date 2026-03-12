@@ -5,6 +5,7 @@ interface Props {
 }
 
 interface Result {
+  rater_id: string,
   student_id: string;
   rater_knw_score: number;
   rater_crt_score: number;
