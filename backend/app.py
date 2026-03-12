@@ -148,6 +148,10 @@ def viewer():
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def serve(path):
+
+    if path.startswith("viewer"):
+        return {"error": "not found"}, 404
+
     file_path = os.path.join(app.static_folder, path)
 
     if path != "" and os.path.exists(file_path):

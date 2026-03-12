@@ -27,8 +27,14 @@ const DataViewer: React.FC<Props> = ({ apiUrl }) => {
   const fetchData = async () => {
     try {
       const res = await fetch(`${apiUrl}/viewer`);
+
+      if (!res.ok) {
+        throw new Error(`HTTP error ${res.status}`);
+      }
+
       const data = await res.json();
       setResults(data.results || []);
+
     } catch (err) {
       console.error(err);
       alert("조회 실패");
