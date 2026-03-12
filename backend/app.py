@@ -82,7 +82,7 @@ latest_final AS (
 )
 
 SELECT
-    r.rater_id,
+    rd.rater_id,
     s.student_id,
 
     r.knw_score AS rater_knw_score,
@@ -100,6 +100,9 @@ FROM latest_rater r
 
 JOIN studentDB s
     ON r.student_uid = s.student_uid
+
+JOIN raterDB rd
+    ON r.rater_uid = rd.rater_uid
 
 LEFT JOIN latest_ai a
     ON r.student_uid = a.student_uid
