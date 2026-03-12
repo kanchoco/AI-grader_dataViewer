@@ -114,7 +114,7 @@ LEFT JOIN latest_final f
 
 ORDER BY r.rater_uid, s.student_id """
 
-@app.get("/export_excel")
+@app.get("/expert_excel")
 def export_excel():
 
     engine = get_engine()
