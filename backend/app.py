@@ -48,17 +48,10 @@ def get_engine():
     )
 
 # API 영역
-SQL = """ WITH latest_rater AS (
-    SELECT *
-    FROM (
-        SELECT *,
-        ROW_NUMBER() OVER (
-            PARTITION BY student_uid, rater_uid
-            ORDER BY created_at DESC
-        ) AS rn
-        FROM rater_scoreDB
-    ) t
-    WHERE rn = 1
+SQL = """ WITH base AS (
+    SELECT student_uid, rater_uid
+    FROM rater_scoreDB
+    GROUP BY student_uid, rater_uid
 ),
 
 latest_ai AS (
@@ -85,6 +78,19 @@ latest_final AS (
         FROM final_scoreDB
     ) t
     WHERE rn = 1
+),
+
+latest_rater AS (
+    SELECT *
+    FROM (
+        SELECT *,
+        ROW_NUMBER() OVER (
+            PARTITION BY student_uid, rater_uid
+            ORDER BY created_at DESC
+        ) AS rn
+        FROM rater_scoreDB
+    ) t
+    WHERE rn = 1
 )
 
 SELECT
@@ -105,21 +111,25 @@ SELECT
     a.created_at AS ai_time,
     f.created_at AS final_time
 
-FROM latest_rater r
+FROM base b
 
-JOIN studentDB s
-    ON r.student_uid = s.student_uid
-
-JOIN raterDB rd
-    ON r.rater_uid = rd.rater_uid
+LEFT JOIN latest_rater r
+ON b.student_uid = r.student_uid
+AND b.rater_uid = r.rater_uid
 
 LEFT JOIN latest_ai a
-    ON r.student_uid = a.student_uid
-    AND r.rater_uid = a.rater_uid
+ON b.student_uid = a.student_uid
+AND b.rater_uid = a.rater_uid
 
 LEFT JOIN latest_final f
-    ON r.student_uid = f.student_uid
-    AND r.rater_uid = f.rater_uid
+ON b.student_uid = f.student_uid
+AND b.rater_uid = f.rater_uid
+
+JOIN studentDB s
+ON b.student_uid = s.student_uid
+
+JOIN raterDB rd
+ON b.rater_uid = rd.rater_uid
 
 ORDER BY rd.rater_id, s.student_id; """
 
